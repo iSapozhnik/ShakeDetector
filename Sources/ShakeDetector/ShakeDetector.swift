@@ -42,6 +42,8 @@ public class ShakeDetector {
         Debouncer(delay: debouncePeriod)
     }()
     
+    private var monitor: Any?
+    
     // MARK: - Types
     
     private enum MovementDirection {
@@ -110,12 +112,16 @@ public class ShakeDetector {
     }
     
     public func startMonitoring() {
-        NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
+        monitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
             self?.processMouseEvent(event)
         }
     }
     
     public func stopMonitoring() {
+        if let monitor {
+            NSEvent.removeMonitor(monitor)
+            self.monitor = nil
+        }
         detectionWorkItem?.cancel()
         detectionWorkItem = nil
         debouncer.cancel()
