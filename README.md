@@ -18,7 +18,7 @@
 Add the following to your `Package.swift` file:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/ShakeDetector.git", from: "1.0.0")
+    .package(url: "https://github.com/isapozhnik/ShakeDetector.git", from: "1.0.0")
 ]
 ```
 
@@ -29,7 +29,7 @@ dependencies: [
 import ShakeDetector
 
 class ViewController {
-    private let shakeDetector = ShakeDetector1()
+    private let shakeDetector = ShakeDetector()
     func setupShakeDetection() {
         // Set up shake handler
         shakeDetector.onShake = { [weak self] in
