@@ -1,13 +1,13 @@
 # ShakeDetector
 
-🌋 A lightweight and customizable mouse shake detection library for macOS applications.
+🌋 A lightweight Swift package for detecting mouse shake gestures on macOS.
 
 ## Features
-
-- 🎯 Detects mouse shake gestures in both horizontal and vertical directions
+- 🎯 Mouse shake detection with configurable sensitivity
 - ⚡️ High performance with minimal CPU usage
-- 🎚️ Adjustable sensitivity levels
-- ⏱️ Configurable debounce period
+- ↔️ Horizontal and vertical shake detection
+- 🎚️ Adjustable detection parameters
+- ⏱️ Built-in configurable debouncing to prevent multiple triggers
 - 🛡️ Memory-safe implementation with proper cleanup
 - 💻 Pure Swift implementation
 
@@ -24,70 +24,63 @@ dependencies: [
 
 ## Usage
 
-### Basic Implementation
+### Basic Setup ⚡️
 ```swift
 import ShakeDetector
 
-class ViewController {
-    private let shakeDetector = ShakeDetector()
-    func setupShakeDetection() {
-        // Set up shake handler
-        shakeDetector.onShake = { [weak self] in
-            print("Shake detected!")
-            // Handle shake event
-        }
-    }
+// Initialize with default settings
+let detector = ShakeDetector()
+
+// Or initialize with custom settings
+let configuredDetector = ShakeDetector(
+    sensitivity: .high,
+    debouncePeriod: 0.35  // in seconds
+)
+
+// Set up shake handler
+detector.onShake {
+    print("Shake detected!")
 }
 ```
 
-### Customizing Sensitivity
+### Sensitivity Settings 🎚️
 ```swift
-// Available sensitivity levels: .high, .medium, .low
-shakeDetector.setSensitivity(.medium)
+// Available options: .high, .medium, .low, .custom
+detector.setSensitivity(.high)
+
+// Custom sensitivity
+detector.setSensitivity(.custom(
+    minimumVelocityThreshold: 500,
+    minimumDirectionChanges: 4,
+    detectionWindow: 0.75
+))
 ```
 
-### Adjusting Debounce Period
-```swift
-// Set debounce period in seconds
-shakeDetector.setDebouncePeriod(0.5)
-```
+### Sensitivity Levels 📊
 
-### Manual Control
+| Level  | Velocity | Direction Changes | Detection Window |
+|--------|----------|------------------|------------------|
+| High   | 400      | 3                | 0.5s            |
+| Medium | 600      | 4                | 0.75s           |
+| Low    | 800      | 5                | 1.0s            |
+
+### Control 🎮
 ```swift
-// Start monitoring (automatically called after initialization)
-shakeDetector.startMonitoring()
 // Stop monitoring
-shakeDetector.stopMonitoring()
+detector.stopMonitoring()
+
+// Resume monitoring
+detector.startMonitoring()
 ```
 
-
-## Configuration
-
-The ShakeDetector can be initialized with custom sensitivity and debounce period:
-```swift
-let detector = ShakeDetector1(
-    sensitivity: .medium, // Default
-    debouncePeriod: 0.5 // Default: 0.5 seconds
-)
-```
-
-### Sensitivity Levels
-
-| Level  | Velocity Threshold | Direction Changes | Detection Window |
-|--------|-------------------|-------------------|------------------|
-| High   | 400              | 3                 | 0.5s            |
-| Medium | 600              | 4                 | 0.75s           |
-| Low    | 800              | 5                 | 1.0s            |
-
-## Requirements
-
+## Requirements 🔧
 - macOS 10.12+
 - Swift 5.4+
 
-## License
+## License 📝
 
 This project is available under the MIT license. See the LICENSE file for more info.
 
-## Contributing
+## Contributing 🤝
 
 Contributions are welcome! Please feel free to submit a Pull Request.
