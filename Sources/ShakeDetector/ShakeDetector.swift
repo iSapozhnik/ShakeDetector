@@ -133,7 +133,7 @@ class ShakeDetector {
     
     internal func processMouseEvent(_ event: NSEvent) {
         let currentPosition = event.locationInWindow
-        let currentTime = ProcessInfo.processInfo.systemUptime
+        let currentTime = event.timestamp
         
         // Add current movement to recent movements
         recentMovements.append((position: currentPosition, timestamp: currentTime))
@@ -156,37 +156,42 @@ class ShakeDetector {
                 let horizontalVelocity = horizontalDistance / CGFloat(timeElapsed)
                 let verticalVelocity = verticalDistance / CGFloat(timeElapsed)
                 
+                
                 // Determine primary movement direction based on larger delta
                 if abs(deltaX) >= minimumMovementThreshold || abs(deltaY) >= minimumMovementThreshold {
                     let currentDirection: MovementDirection
                     let velocity: CGFloat
                     
                     if abs(deltaX) > abs(deltaY) {
-                        // Horizontal movement is dominant
                         currentDirection = deltaX > 0 ? .right : .left
                         velocity = horizontalVelocity
                     } else {
-                        // Vertical movement is dominant
                         currentDirection = deltaY > 0 ? .up : .down
                         velocity = verticalVelocity
                     }
                     
                     // Check for direction change
-                    if let previousDirection = previousDirection,
-                       previousDirection != currentDirection,
-                       // Only count direction change if it's in the same plane (horizontal/vertical)
-                       previousDirection.isHorizontal == currentDirection.isHorizontal,
-                       velocity >= minimumVelocityThreshold {
+                    if let previousDirection = previousDirection {
+                        print("Previous: \(previousDirection), Current: \(currentDirection), Velocity: \(velocity), Threshold: \(minimumVelocityThreshold)")
                         
-                        directionChanges += 1
-                        
-                        // Check if shake detected
-                        if directionChanges >= minimumDirectionChanges {
-                            handleShakeDetected()
+                        if previousDirection != currentDirection &&
+                            previousDirection.isHorizontal == currentDirection.isHorizontal &&
+                            velocity >= minimumVelocityThreshold {
+                            
+                            directionChanges += 1
+                            print("Direction change detected! Count: \(directionChanges)")
+                            
+                            // Check if we've reached the required number of direction changes
+                            if directionChanges >= minimumDirectionChanges {
+                                handleShakeDetected()
+                            }
                         }
                     }
                     
-                    self.previousDirection = currentDirection
+                    // Only update previous direction if velocity is above threshold
+                    if velocity >= minimumVelocityThreshold {
+                        self.previousDirection = currentDirection
+                    }
                 }
             }
         }

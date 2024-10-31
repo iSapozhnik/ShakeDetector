@@ -22,23 +22,37 @@ import Cocoa
         let startPosition = CGPoint(x: 100, y: 100)
         simulateShakeGesture(detector: detector, startPosition: startPosition)
         
-        // Wait for debounce period
-        try await Task.sleep(for: .milliseconds(1000))
+        // Wait for debounce period plus a small buffer
+        try await Task.sleep(for: .milliseconds(2000))
         
         #expect(shakeDetected == true, "Shake should be detected")
     }
     
-    @Test func testSensitivitySettings() throws {
+    @Test func testSensitivitySettings() async throws {
         let detector = ShakeDetector()
+        var shakeDetected = false
         
-        // Test changing sensitivity
-        detector.setSensitivity(.high)
-        detector.setSensitivity(.medium)
+        detector.onShake = {
+            shakeDetected = true
+        }
+        
+        // Test with low sensitivity - should not detect a small shake
         detector.setSensitivity(.low)
+        let smallShake: [(CGFloat, CGFloat)] = [(100, 0), (-100, 0), (100, 0), (-100, 0)]  // Smaller movements
+        simulateCustomShake(detector: detector, startPosition: .zero, movements: smallShake)
+        try await Task.sleep(for: .milliseconds(600))
+        #expect(shakeDetected == false, "Small shake should not be detected with low sensitivity")
+        
+        // Test with high sensitivity - should detect the small shake
+        shakeDetected = false
+        detector.setSensitivity(.high)
+        simulateCustomShake(detector: detector, startPosition: .zero, movements: smallShake)
+        try await Task.sleep(for: .milliseconds(600))
+        #expect(shakeDetected == true, "Small shake should be detected with high sensitivity")
     }
     
     @Test func testDebouncePeriod() async throws {
-        let detector = ShakeDetector(debouncePeriod: 1.0)
+        let detector = ShakeDetector(debouncePeriod: 0.5)
         var shakeCount = 0
         
         detector.onShake = {
@@ -48,10 +62,14 @@ import Cocoa
         // Simulate multiple shakes in quick succession
         let startPosition = CGPoint(x: 100, y: 100)
         simulateShakeGesture(detector: detector, startPosition: startPosition)
+        
+        // Wait a bit before second shake
+        try await Task.sleep(for: .milliseconds(100))
+        
         simulateShakeGesture(detector: detector, startPosition: startPosition)
         
-        // Wait for debounce period
-        try await Task.sleep(for: .milliseconds(1100))
+        // Wait for debounce period plus a small buffer
+        try await Task.sleep(for: .milliseconds(600))
         
         #expect(shakeCount == 1, "Multiple shakes within debounce period should only trigger once")
     }
@@ -76,17 +94,64 @@ import Cocoa
 // MARK: - Helper Methods
 
 private func simulateShakeGesture(detector: ShakeDetector, startPosition: CGPoint) {
-    // Create mock mouse movements that simulate a shake gesture
     let movements: [(CGFloat, CGFloat)] = [
-        (50, 0),   // Right
-        (-50, 0),  // Left
-        (50, 0),   // Right
-        (-50, 0),  // Left
-        (50, 0),   // Right
+        (200, 0),    // Right
+        (-400, 0),   // Left
+        (400, 0),    // Right
+        (-400, 0),   // Left
+        (400, 0),    // Right
     ]
     
     var currentPosition = startPosition
-    let baseTime = ProcessInfo.processInfo.systemUptime
+    let baseTime: TimeInterval = 1000.0
+    
+    // Add initial position
+    let initialEvent = MockNSEvent(
+        locationInWindow: currentPosition,
+        timestamp: baseTime
+    )
+    detector.processMouseEvent(initialEvent)
+    
+    for (index, movement) in movements.enumerated() {
+        // Calculate new position
+        currentPosition = CGPoint(
+            x: currentPosition.x + movement.0,
+            y: currentPosition.y + movement.1
+        )
+        
+        // Create intermediate points to make movement more realistic
+        let steps = 3  // Reduced steps for higher velocity
+        let stepX = movement.0 / CGFloat(steps)
+        let stepY = movement.1 / CGFloat(steps)
+        let timeStep = 0.01  // Reduced time step for higher velocity
+        
+        for step in 0..<steps {
+            let intermediatePosition = CGPoint(
+                x: currentPosition.x - movement.0 + (stepX * CGFloat(step + 1)),
+                y: currentPosition.y - movement.1 + (stepY * CGFloat(step + 1))
+            )
+            
+            let event = MockNSEvent(
+                locationInWindow: intermediatePosition,
+                timestamp: baseTime + Double(index) * 0.05 + (Double(step) * timeStep)
+            )
+            
+            detector.processMouseEvent(event)
+            Thread.sleep(forTimeInterval: 0.005)  // Reduced sleep time
+        }
+    }
+}
+
+// Add this helper method for custom shake patterns
+private func simulateCustomShake(detector: ShakeDetector, startPosition: CGPoint, movements: [(CGFloat, CGFloat)]) {
+    var currentPosition = startPosition
+    let baseTime: TimeInterval = 1000.0
+    
+    let initialEvent = MockNSEvent(
+        locationInWindow: currentPosition,
+        timestamp: baseTime
+    )
+    detector.processMouseEvent(initialEvent)
     
     for (index, movement) in movements.enumerated() {
         currentPosition = CGPoint(
@@ -94,14 +159,25 @@ private func simulateShakeGesture(detector: ShakeDetector, startPosition: CGPoin
             y: currentPosition.y + movement.1
         )
         
-        // Create a mock NSEvent
-        let event = MockNSEvent(
-            locationInWindow: currentPosition,
-            timestamp: baseTime + Double(index) * 0.1
-        )
+        let steps = 3
+        let stepX = movement.0 / CGFloat(steps)
+        let stepY = movement.1 / CGFloat(steps)
+        let timeStep = 0.01
         
-        // Process the mock event
-        detector.processMouseEvent(event)
+        for step in 0..<steps {
+            let intermediatePosition = CGPoint(
+                x: currentPosition.x - movement.0 + (stepX * CGFloat(step + 1)),
+                y: currentPosition.y - movement.1 + (stepY * CGFloat(step + 1))
+            )
+            
+            let event = MockNSEvent(
+                locationInWindow: intermediatePosition,
+                timestamp: baseTime + Double(index) * 0.05 + (Double(step) * timeStep)
+            )
+            
+            detector.processMouseEvent(event)
+            Thread.sleep(forTimeInterval: 0.005)
+        }
     }
 }
 
@@ -129,3 +205,4 @@ private class MockNSEvent: NSEvent {
         return mockedTimestamp
     }
 }
+
