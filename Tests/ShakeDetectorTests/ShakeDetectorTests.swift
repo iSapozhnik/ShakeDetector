@@ -14,7 +14,7 @@ import Cocoa
         let detector = ShakeDetector(sensitivity: .high)
         var shakeDetected = false
         
-        detector.onShake = {
+        detector.onShake {
             shakeDetected = true
         }
         
@@ -32,7 +32,7 @@ import Cocoa
         let detector = ShakeDetector()
         var shakeDetected = false
         
-        detector.onShake = {
+        detector.onShake {
             shakeDetected = true
         }
         
@@ -55,7 +55,7 @@ import Cocoa
         let detector = ShakeDetector(debouncePeriod: 0.5)
         var shakeCount = 0
         
-        detector.onShake = {
+        detector.onShake {
             shakeCount += 1
         }
         
@@ -78,7 +78,7 @@ import Cocoa
         let detector = ShakeDetector()
         var shakeDetected = false
         
-        detector.onShake = {
+        detector.onShake {
             shakeDetected = true
         }
         

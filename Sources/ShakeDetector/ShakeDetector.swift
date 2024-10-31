@@ -5,7 +5,7 @@ public class ShakeDetector {
     // MARK: - Properties
     
     /// Closure to be executed when shake is detected
-    public var onShake: (() -> Void)?
+    private var onShakeHandler: (() -> Void)?
     
     /// Minimum velocity required to consider movement as shake (pixels per second)
     private var minimumVelocityThreshold: CGFloat
@@ -13,7 +13,10 @@ public class ShakeDetector {
     /// Minimum number of direction changes required to detect shake
     private var minimumDirectionChanges: Int
     
-    /// Time window to detect shake gesture (in seconds)
+    /// The maximum duration (in seconds) within which a shake gesture must be completed.
+    /// If the required number of direction changes are not detected within this window,
+    /// the gesture detection resets. This helps prevent false positives from slow,
+    /// unintentional mouse movements.
     private var detectionWindow: TimeInterval
     
     /// Cooldown period between shake detections (in seconds)
@@ -32,7 +35,11 @@ public class ShakeDetector {
     private var previousDirection: MovementDirection?
     
     /// Direction changes counter
-    private var directionChanges = 0
+    private var directionChanges = 0 {
+        didSet {
+            print("ShakeDetector directionChanges: \(directionChanges)")
+        }
+    }
     
     /// Minimum movement threshold (pixels)
     private let minimumMovementThreshold: CGFloat = 5.0
@@ -58,36 +65,60 @@ public class ShakeDetector {
     }
     
     // MARK: - Initialization
-    
-    public init(sensitivity: ShakeSensitivity = .medium, debouncePeriod: TimeInterval = 0.5) {
+    /// Initializes a new ShakeDetector instance with the specified sensitivity and debounce period.
+    ///
+    /// - Parameters:
+    ///   - sensitivity: The sensitivity level for shake detection. Defaults to `.medium`.
+    ///   - debouncePeriod: The debounce period for shake detection. Defaults to `0.35` seconds.
+    public init(sensitivity: ShakeSensitivity = .medium, debouncePeriod: TimeInterval = 0.35) {
         self.debouncePeriod = debouncePeriod
         
         switch sensitivity {
         case .high:
             minimumVelocityThreshold = 400
             minimumDirectionChanges = 3
-            detectionWindow = 0.5
+            detectionWindow = 0.75
         case .medium:
             minimumVelocityThreshold = 600
             minimumDirectionChanges = 4
-            detectionWindow = 0.75
+            detectionWindow = 0.5
         case .low:
             minimumVelocityThreshold = 800
             minimumDirectionChanges = 5
-            detectionWindow = 1.0
+            detectionWindow = 0.25
+        case .custom(let minimumVelocityThreshold, let minimumDirectionChanges, let detectionWindow):
+            self.minimumVelocityThreshold = minimumVelocityThreshold
+            self.minimumDirectionChanges = minimumDirectionChanges
+            self.detectionWindow = detectionWindow
         }
         
         startMonitoring()
     }
     
     // MARK: - Public API
-    
+
+    /// Sets the handler for shake detection.
+    public func onShake(_ handler: @escaping () -> Void) {
+        onShakeHandler = handler
+    }
+
+    /// The sensitivity level for shake detection.
     public enum ShakeSensitivity {
+        /// High sensitivity.
         case high
+        /// Medium sensitivity.
         case medium
+        /// Low sensitivity.
         case low
+        /// Custom sensitivity.
+        case custom(
+            minimumVelocityThreshold: CGFloat,
+            minimumDirectionChanges: Int,
+            detectionWindow: TimeInterval
+        )
     }
     
+    /// Sets the sensitivity level for shake detection.
     public func setSensitivity(_ sensitivity: ShakeSensitivity) {
         switch sensitivity {
         case .high:
@@ -102,21 +133,28 @@ public class ShakeDetector {
             minimumVelocityThreshold = 800
             minimumDirectionChanges = 5
             detectionWindow = 1.0
+        case .custom(let minimumVelocityThreshold, let minimumDirectionChanges, let detectionWindow):
+            self.minimumVelocityThreshold = minimumVelocityThreshold
+            self.minimumDirectionChanges = minimumDirectionChanges
+            self.detectionWindow = detectionWindow
         }
     }
     
+    /// Sets the debounce period for shake detection.
     public func setDebouncePeriod(_ period: TimeInterval) {
         debouncePeriod = period
         // Update debouncer with new period
         debouncer = Debouncer(delay: period)
     }
     
+    /// Starts monitoring for mouse movements.
     public func startMonitoring() {
         monitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
             self?.processMouseEvent(event)
         }
     }
     
+    /// Stops monitoring for mouse movements.
     public func stopMonitoring() {
         if let monitor {
             NSEvent.removeMonitor(monitor)
@@ -215,7 +253,7 @@ public class ShakeDetector {
         // Use debouncer instead of Timer
         debouncer.debounce { [weak self] in
             // Trigger shake handler
-            self?.onShake?()
+            self?.onShakeHandler?()
         }
         
         // Reset detection state
