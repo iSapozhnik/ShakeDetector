@@ -51,6 +51,9 @@ public class ShakeDetector {
     
     private var monitor: Any?
     
+    /// Time when the first movement in current gesture was detected
+    private var gestureStartTime: TimeInterval?
+    
     // MARK: - Types
     
     private enum MovementDirection {
@@ -69,23 +72,23 @@ public class ShakeDetector {
     ///
     /// - Parameters:
     ///   - sensitivity: The sensitivity level for shake detection. Defaults to `.medium`.
-    ///   - debouncePeriod: The debounce period for shake detection. Defaults to `0.35` seconds.
-    public init(sensitivity: ShakeSensitivity = .medium, debouncePeriod: TimeInterval = 0.35) {
+    ///   - debouncePeriod: The debounce period for shake detection. Defaults to `0.5` seconds.
+    public init(sensitivity: ShakeSensitivity = .medium, debouncePeriod: TimeInterval = 0.5) {
         self.debouncePeriod = debouncePeriod
         
         switch sensitivity {
         case .high:
             minimumVelocityThreshold = 400
             minimumDirectionChanges = 3
-            detectionWindow = 0.75
+            detectionWindow = 0.5
         case .medium:
             minimumVelocityThreshold = 600
             minimumDirectionChanges = 4
-            detectionWindow = 0.5
+            detectionWindow = 0.75
         case .low:
             minimumVelocityThreshold = 800
             minimumDirectionChanges = 5
-            detectionWindow = 0.25
+            detectionWindow = 1.0
         case .custom(let minimumVelocityThreshold, let minimumDirectionChanges, let detectionWindow):
             self.minimumVelocityThreshold = minimumVelocityThreshold
             self.minimumDirectionChanges = minimumDirectionChanges
@@ -177,13 +180,16 @@ public class ShakeDetector {
         let currentPosition = event.locationInWindow
         let currentTime = event.timestamp
         
+        // Start new gesture detection window if this is first movement or previous window expired
+        if gestureStartTime == nil || (currentTime - gestureStartTime!) > detectionWindow {
+            gestureStartTime = currentTime
+            recentMovements.removeAll()
+            directionChanges = 0
+            previousDirection = nil
+        }
+        
         // Add current movement to recent movements
         recentMovements.append((position: currentPosition, timestamp: currentTime))
-        
-        // Remove old movements outside detection window
-        recentMovements = recentMovements.filter {
-            currentTime - $0.timestamp <= detectionWindow
-        }
         
         // Process movement if we have enough data
         if let previousPosition = previousPosition {
@@ -212,41 +218,36 @@ public class ShakeDetector {
                         velocity = verticalVelocity
                     }
                     
-                    // Check for direction change
-                    if let previousDirection = previousDirection {
-//                        print("Previous: \(previousDirection), Current: \(currentDirection), Velocity: \(velocity), Threshold: \(minimumVelocityThreshold)")
-                        
-                        if previousDirection != currentDirection &&
-                            previousDirection.isHorizontal == currentDirection.isHorizontal &&
-                            velocity >= minimumVelocityThreshold {
+                    // Check if we're still within detection window
+                    if currentTime - gestureStartTime! <= detectionWindow {
+                        // Check for direction change
+                        if let previousDirection = previousDirection {
+//                            print("Previous: \(previousDirection), Current: \(currentDirection), Velocity: \(velocity), Threshold: \(minimumVelocityThreshold)")
                             
-                            directionChanges += 1
-//                            print("Direction change detected! Count: \(directionChanges)")
-                            
-                            // Check if we've reached the required number of direction changes
-                            if directionChanges >= minimumDirectionChanges {
-                                handleShakeDetected()
+                            if previousDirection != currentDirection &&
+                                previousDirection.isHorizontal == currentDirection.isHorizontal &&
+                                velocity >= minimumVelocityThreshold {
+                                
+                                directionChanges += 1
+//                                print("Direction change detected! Count: \(directionChanges)")
+                                
+                                // Check if we've reached the required number of direction changes
+                                if directionChanges >= minimumDirectionChanges {
+                                    handleShakeDetected()
+                                }
                             }
                         }
-                    }
-                    
-                    // Only update previous direction if velocity is above threshold
-                    if velocity >= minimumVelocityThreshold {
-                        self.previousDirection = currentDirection
+                        
+                        // Only update previous direction if velocity is above threshold
+                        if velocity >= minimumVelocityThreshold {
+                            self.previousDirection = currentDirection
+                        }
                     }
                 }
             }
         }
         
         self.previousPosition = currentPosition
-        
-        // Reset detection if no shake detected within window
-        detectionWorkItem?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.resetDetection()
-        }
-        detectionWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + detectionWindow, execute: workItem)
     }
     
     private func handleShakeDetected() {
@@ -265,7 +266,6 @@ public class ShakeDetector {
         previousPosition = nil
         previousDirection = nil
         directionChanges = 0
-        detectionWorkItem?.cancel()
-        detectionWorkItem = nil
+        gestureStartTime = nil
     }
 }
