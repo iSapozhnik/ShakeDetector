@@ -134,6 +134,8 @@ public class ShakeDetector {
     // MARK: - Private Methods
     
     internal func processMouseEvent(_ event: NSEvent) {
+        guard monitor != nil else { return }
+        
         let currentPosition = event.locationInWindow
         let currentTime = event.timestamp
         
