@@ -1,11 +1,11 @@
 import Foundation
 import Cocoa
 
-class ShakeDetector {
+public class ShakeDetector {
     // MARK: - Properties
     
     /// Closure to be executed when shake is detected
-    var onShake: (() -> Void)?
+    public var onShake: (() -> Void)?
     
     /// Minimum velocity required to consider movement as shake (pixels per second)
     private var minimumVelocityThreshold: CGFloat
@@ -32,11 +32,7 @@ class ShakeDetector {
     private var previousDirection: MovementDirection?
     
     /// Direction changes counter
-    private var directionChanges = 0 {
-        didSet {
-            // print("directionChanges: \(directionChanges)")
-        }
-    }
+    private var directionChanges = 0
     
     /// Minimum movement threshold (pixels)
     private let minimumMovementThreshold: CGFloat = 5.0
@@ -61,7 +57,7 @@ class ShakeDetector {
     
     // MARK: - Initialization
     
-    init(sensitivity: ShakeSensitivity = .medium, debouncePeriod: TimeInterval = 0.5) {
+    public init(sensitivity: ShakeSensitivity = .medium, debouncePeriod: TimeInterval = 0.5) {
         self.debouncePeriod = debouncePeriod
         
         switch sensitivity {
@@ -84,13 +80,13 @@ class ShakeDetector {
     
     // MARK: - Public API
     
-    enum ShakeSensitivity {
+    public enum ShakeSensitivity {
         case high
         case medium
         case low
     }
     
-    func setSensitivity(_ sensitivity: ShakeSensitivity) {
+    public func setSensitivity(_ sensitivity: ShakeSensitivity) {
         switch sensitivity {
         case .high:
             minimumVelocityThreshold = 400
@@ -107,19 +103,19 @@ class ShakeDetector {
         }
     }
     
-    func setDebouncePeriod(_ period: TimeInterval) {
+    public func setDebouncePeriod(_ period: TimeInterval) {
         debouncePeriod = period
         // Update debouncer with new period
         debouncer = Debouncer(delay: period)
     }
     
-    func startMonitoring() {
+    public func startMonitoring() {
         NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
             self?.processMouseEvent(event)
         }
     }
     
-    func stopMonitoring() {
+    public func stopMonitoring() {
         detectionWorkItem?.cancel()
         detectionWorkItem = nil
         debouncer.cancel()
@@ -172,14 +168,14 @@ class ShakeDetector {
                     
                     // Check for direction change
                     if let previousDirection = previousDirection {
-                        print("Previous: \(previousDirection), Current: \(currentDirection), Velocity: \(velocity), Threshold: \(minimumVelocityThreshold)")
+//                        print("Previous: \(previousDirection), Current: \(currentDirection), Velocity: \(velocity), Threshold: \(minimumVelocityThreshold)")
                         
                         if previousDirection != currentDirection &&
                             previousDirection.isHorizontal == currentDirection.isHorizontal &&
                             velocity >= minimumVelocityThreshold {
                             
                             directionChanges += 1
-                            print("Direction change detected! Count: \(directionChanges)")
+//                            print("Direction change detected! Count: \(directionChanges)")
                             
                             // Check if we've reached the required number of direction changes
                             if directionChanges >= minimumDirectionChanges {
