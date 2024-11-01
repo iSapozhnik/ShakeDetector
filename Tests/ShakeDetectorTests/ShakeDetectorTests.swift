@@ -10,6 +10,26 @@ import Cocoa
         #expect(detector != nil)
     }
     
+    @Test func testMonitoringState() async throws {
+        let detector = ShakeDetector()
+        var shakeDetected = false
+        
+        detector.onShake {
+            shakeDetected = true
+        }
+        
+        // Simulate shake without starting monitoring
+        let startPosition = CGPoint(x: 100, y: 100)
+        simulateShakeGesture(detector: detector, startPosition: startPosition)
+        #expect(shakeDetected == false, "Shake should not be detected before starting monitoring")
+        
+        // Start monitoring and simulate shake
+        detector.startMonitoring()
+        simulateShakeGesture(detector: detector, startPosition: startPosition)
+        try await Task.sleep(for: .milliseconds(1000))
+        #expect(shakeDetected == true, "Shake should be detected after starting monitoring")
+    }
+    
     @Test func testShakeDetection() async throws {
         let detector = ShakeDetector(sensitivity: .high)
         var shakeDetected = false
@@ -17,6 +37,8 @@ import Cocoa
         detector.onShake {
             shakeDetected = true
         }
+        
+        detector.startMonitoring() // Added explicit start
         
         // Simulate shake gesture
         let startPosition = CGPoint(x: 100, y: 100)
@@ -35,6 +57,8 @@ import Cocoa
         detector.onShake {
             shakeDetected = true
         }
+        
+        detector.startMonitoring() // Added explicit start
         
         // Test with low sensitivity - should not detect a small shake
         detector.setSensitivity(.low)
@@ -59,6 +83,8 @@ import Cocoa
             shakeCount += 1
         }
         
+        detector.startMonitoring() // Added explicit start
+        
         // Simulate multiple shakes in quick succession
         let startPosition = CGPoint(x: 100, y: 100)
         simulateShakeGesture(detector: detector, startPosition: startPosition)
@@ -82,6 +108,7 @@ import Cocoa
             shakeDetected = true
         }
         
+        detector.startMonitoring() // Added explicit start
         detector.stopMonitoring()
         
         let startPosition = CGPoint(x: 100, y: 100)
