@@ -41,6 +41,9 @@ let configuredDetector = ShakeDetector(
 detector.onShake {
     print("Shake detected!")
 }
+
+// Start monitoring
+detector.startMonitoring()
 ```
 
 ### Sensitivity Settings 🎚️

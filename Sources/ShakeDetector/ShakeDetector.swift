@@ -90,8 +90,6 @@ public class ShakeDetector {
             self.minimumDirectionChanges = minimumDirectionChanges
             self.detectionWindow = detectionWindow
         }
-        
-        startMonitoring()
     }
     
     // MARK: - Public API
