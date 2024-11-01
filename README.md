@@ -48,7 +48,7 @@ detector.startMonitoring()
 
 ### Sensitivity Settings 🎚️
 ```swift
-// Available options: .high, .medium, .low, .custom
+// Available options: .extraHigh, .high, .medium, .low, .custom
 detector.setSensitivity(.high)
 
 // Custom sensitivity
@@ -63,6 +63,7 @@ detector.setSensitivity(.custom(
 
 | Level  | Velocity | Direction Changes | Detection Window |
 |--------|----------|------------------|------------------|
+| Extra High | 200      | 2                | 0.25s            |
 | High   | 400      | 3                | 0.5s            |
 | Medium | 600      | 4                | 0.75s           |
 | Low    | 800      | 5                | 1.0s            |

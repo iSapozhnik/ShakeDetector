@@ -70,26 +70,14 @@ public class ShakeDetector {
     ///   - sensitivity: The sensitivity level for shake detection. Defaults to `.medium`.
     ///   - debouncePeriod: The debounce period for shake detection. Defaults to `0.5` seconds.
     public init(sensitivity: ShakeSensitivity = .medium, debouncePeriod: TimeInterval = 0.5) {
+        // Initialize with medium sensitivity defaults
+        self.minimumVelocityThreshold = 600
+        self.minimumDirectionChanges = 4
+        self.detectionWindow = 0.75
         self.debouncePeriod = debouncePeriod
         
-        switch sensitivity {
-        case .high:
-            minimumVelocityThreshold = 400
-            minimumDirectionChanges = 3
-            detectionWindow = 0.5
-        case .medium:
-            minimumVelocityThreshold = 600
-            minimumDirectionChanges = 4
-            detectionWindow = 0.75
-        case .low:
-            minimumVelocityThreshold = 800
-            minimumDirectionChanges = 5
-            detectionWindow = 1.0
-        case .custom(let minimumVelocityThreshold, let minimumDirectionChanges, let detectionWindow):
-            self.minimumVelocityThreshold = minimumVelocityThreshold
-            self.minimumDirectionChanges = minimumDirectionChanges
-            self.detectionWindow = detectionWindow
-        }
+        // Now we can safely call handleSensitivityChange
+        handleSensitivityChange(sensitivity)
     }
     
     // MARK: - Public API
@@ -101,6 +89,8 @@ public class ShakeDetector {
 
     /// The sensitivity level for shake detection.
     public enum ShakeSensitivity {
+        /// Extra high sensitivity.
+        case extraHigh
         /// High sensitivity.
         case high
         /// Medium sensitivity.
@@ -117,24 +107,7 @@ public class ShakeDetector {
     
     /// Sets the sensitivity level for shake detection.
     public func setSensitivity(_ sensitivity: ShakeSensitivity) {
-        switch sensitivity {
-        case .high:
-            minimumVelocityThreshold = 400
-            minimumDirectionChanges = 3
-            detectionWindow = 0.5
-        case .medium:
-            minimumVelocityThreshold = 600
-            minimumDirectionChanges = 4
-            detectionWindow = 0.75
-        case .low:
-            minimumVelocityThreshold = 800
-            minimumDirectionChanges = 5
-            detectionWindow = 1.0
-        case .custom(let minimumVelocityThreshold, let minimumDirectionChanges, let detectionWindow):
-            self.minimumVelocityThreshold = minimumVelocityThreshold
-            self.minimumDirectionChanges = minimumDirectionChanges
-            self.detectionWindow = detectionWindow
-        }
+        handleSensitivityChange(sensitivity)
     }
     
     /// Sets the debounce period for shake detection.
@@ -242,6 +215,31 @@ public class ShakeDetector {
         }
         
         self.previousPosition = currentPosition
+    }
+
+    private func handleSensitivityChange(_ sensitivity: ShakeSensitivity) {
+        switch sensitivity {
+        case .extraHigh:
+            minimumVelocityThreshold = 200
+            minimumDirectionChanges = 2
+            detectionWindow = 0.25
+        case .high:
+            minimumVelocityThreshold = 400
+            minimumDirectionChanges = 3
+            detectionWindow = 0.5
+        case .medium:
+            minimumVelocityThreshold = 600
+            minimumDirectionChanges = 4
+            detectionWindow = 0.75
+        case .low:
+            minimumVelocityThreshold = 800
+            minimumDirectionChanges = 5
+            detectionWindow = 1.0
+        case .custom(let minimumVelocityThreshold, let minimumDirectionChanges, let detectionWindow):
+            self.minimumVelocityThreshold = minimumVelocityThreshold
+            self.minimumDirectionChanges = minimumDirectionChanges
+            self.detectionWindow = detectionWindow
+        }
     }
     
     private func handleShakeDetected() {
