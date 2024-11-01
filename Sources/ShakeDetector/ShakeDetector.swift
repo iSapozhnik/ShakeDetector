@@ -35,11 +35,7 @@ public class ShakeDetector {
     private var previousDirection: MovementDirection?
     
     /// Direction changes counter
-    private var directionChanges = 0 {
-        didSet {
-            print("ShakeDetector directionChanges: \(directionChanges)")
-        }
-    }
+    private var directionChanges = 0
     
     /// Minimum movement threshold (pixels)
     private let minimumMovementThreshold: CGFloat = 5.0
