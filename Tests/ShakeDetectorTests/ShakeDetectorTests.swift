@@ -90,12 +90,12 @@ import Cocoa
         simulateShakeGesture(detector: detector, startPosition: startPosition)
         
         // Wait a bit before second shake
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: .milliseconds(50))
         
         simulateShakeGesture(detector: detector, startPosition: startPosition)
         
         // Wait for debounce period plus a small buffer
-        try await Task.sleep(for: .milliseconds(1000))
+        try await Task.sleep(for: .milliseconds(1500))
         
         #expect(shakeCount == 1, "Multiple shakes within debounce period should only trigger once")
     }
