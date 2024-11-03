@@ -1,0 +1,25 @@
+name: Swift
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Swift
+      uses: fwal/setup-swift@v1
+      with:
+        swift-version: '5.4' # Specify the Swift version you are using
+
+    - name: Build and test
+      run: swift test 
